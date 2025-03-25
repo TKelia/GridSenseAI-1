@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Usage Dashboard - GridSenseAI</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <svg class="logo-icon" width="40" height="40" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="19" fill="none" stroke="#1a237e" stroke-width="2"/>
+                <path d="M20 10l-6 10h6l-2 10l8-12h-6l4-8z" fill="#00b894"/>
+                <circle cx="20" cy="20" r="12" fill="none" stroke="#1a237e" stroke-width="0.5" opacity="0.2">
+                    <animate attributeName="r" values="12;14;12" dur="2s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.2;0.1;0.2" dur="2s" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+            <span>GridSenseAI</span>
+        </div>
+        <div class="nav-links">
+            <a href="#overview" class="active">Overview</a>
+            <a href="#devices">Devices</a>
+            <a href="#insights">Insights</a>
+            <a href="#settings">Settings</a>
+            <a href="index.html" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <!-- Overview Section -->
+        <section id="overview" class="dashboard-section">
+            <h2>Power Usage Overview</h2>
+            <div class="overview-grid">
+                <!-- Total Power Usage Card -->
+                <div class="card total-power">
+                    <div class="card-header">
+                        <h3>Total Power Usage</h3>
+                        <span class="timestamp">Updated: <span id="lastUpdate">Just now</span></span>
+                    </div>
+                    <div class="card-content">
+                        <div class="power-reading">
+                            <span id="totalPower">0</span>
+                            <span class="unit">W</span>
+                        </div>
+                        <div class="power-trend">
+                            <span id="powerTrend">0%</span>
+                            <span>vs last hour</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Usage Card -->
+                <div class="card daily-usage">
+                    <div class="card-header">
+                        <h3>Today's Usage</h3>
+                        <div class="card-actions">
+                            <button class="btn-icon" onclick="refreshDailyUsage()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <canvas id="dailyUsageChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Peak Hours Card -->
+                <div class="card peak-hours">
+                    <div class="card-header">
+                        <h3>Peak Hours</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="peak-hours-chart">
+                            <canvas id="peakHoursChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Devices Section -->
+        <section id="devices" class="dashboard-section">
+            <div class="section-header">
+                <h2>Connected Devices</h2>
+                <button class="btn-primary" onclick="refreshDevices()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="devices-grid" id="devicesList">
+                <!-- Devices will be populated here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- AI Insights Section -->
+        <section id="insights" class="dashboard-section">
+            <h2>AI-Powered Insights</h2>
+            <div class="insights-container">
+                <div class="card recommendations">
+                    <div class="card-header">
+                        <h3>Recommendations</h3>
+                    </div>
+                    <div class="card-content" id="recommendationsList">
+                        <!-- Recommendations will be populated here by JavaScript -->
+                    </div>
+                </div>
+                <div class="card savings">
+                    <div class="card-header">
+                        <h3>Potential Savings</h3>
+                    </div>
+                    <div class="card-content">
+                        <canvas id="savingsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/dashboard.js"></script>
+    <script src="js/advice.js"></script>
+</body>
+</html>

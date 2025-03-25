@@ -1,0 +1,315 @@
+// Dashboard functionality
+class Dashboard {
+    constructor() {
+        this.charts = {};
+        this.updateInterval = 5000; // Update every 5 seconds
+        this.init();
+    }
+
+    async init() {
+        try {
+            // Initialize charts
+            this.initializeCharts();
+            
+            // Load initial data
+            await this.refreshAll();
+            
+            // Set up auto-refresh
+            setInterval(() => this.refreshAll(), this.updateInterval);
+            
+            // Add event listeners
+            this.setupEventListeners();
+        } catch (error) {
+            console.error('Dashboard initialization error:', error);
+            this.showError('Failed to initialize dashboard');
+        }
+    }
+
+    setupEventListeners() {
+        // Refresh buttons
+        document.querySelectorAll('.btn-refresh').forEach(btn => {
+            btn.addEventListener('click', () => this.refreshAll());
+        });
+    }
+
+    initializeCharts() {
+        try {
+            // Daily Usage Chart
+            const dailyUsageCtx = document.getElementById('dailyUsageChart');
+            if (!dailyUsageCtx) {
+                console.error('Daily usage chart canvas not found');
+                return;
+            }
+
+            this.charts.dailyUsage = new Chart(
+                dailyUsageCtx,
+                {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Power Usage (W)',
+                            data: [],
+                            borderColor: '#1a237e',
+                            backgroundColor: 'rgba(26, 35, 126, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+            // Peak Hours Chart
+            const peakHoursCtx = document.getElementById('peakHoursChart');
+            if (!peakHoursCtx) {
+                console.error('Peak hours chart canvas not found');
+                return;
+            }
+
+            this.charts.peakHours = new Chart(
+                peakHoursCtx,
+                {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Usage (W)',
+                            data: [],
+                            backgroundColor: '#00b894'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                }
+            );
+
+            // Savings Chart
+            const savingsCtx = document.getElementById('savingsChart');
+            if (!savingsCtx) {
+                console.error('Savings chart canvas not found');
+                return;
+            }
+
+            this.charts.savings = new Chart(
+                savingsCtx,
+                {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Potential Savings', 'Current Usage'],
+                        datasets: [{
+                            data: [0, 100],
+                            backgroundColor: ['#00b894', '#e0e0e0']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Error initializing charts:', error);
+            throw error;
+        }
+    }
+
+    async refreshAll() {
+        try {
+            await Promise.all([
+                this.updateCurrentUsage(),
+                this.updateDailyUsage(),
+                this.updateDevices()
+            ]);
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
+            // Only show error if it's not a network error (to avoid spamming)
+            if (!(error instanceof TypeError)) {
+                this.showError('Failed to update dashboard data');
+            }
+        }
+    }
+
+    async updateCurrentUsage() {
+        try {
+            const response = await fetch('/GridSenseAI/api/power/current');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+
+            // Update total power display
+            const totalPowerElement = document.getElementById('totalPower');
+            if (totalPowerElement) {
+                totalPowerElement.textContent = Math.round(data.data.total_power);
+            }
+
+            // Update last update timestamp
+            const lastUpdateElement = document.getElementById('lastUpdate');
+            if (lastUpdateElement) {
+                lastUpdateElement.textContent = new Date().toLocaleTimeString();
+            }
+
+            // Update device list
+            if (data.data.devices) {
+                this.updateDevicesList(data.data.devices);
+            }
+
+        } catch (error) {
+            console.error('Error updating current usage:', error);
+            throw error;
+        }
+    }
+
+    async updateDailyUsage() {
+        try {
+            const response = await fetch('/GridSenseAI/api/power/daily');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+
+            // Update daily usage chart
+            this.updateDailyUsageChart(data.data);
+
+        } catch (error) {
+            console.error('Error updating daily usage:', error);
+            throw error;
+        }
+    }
+
+    async updateDevices() {
+        try {
+            const response = await fetch('/GridSenseAI/api/power/devices');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+
+            this.renderDevices(data.data);
+
+        } catch (error) {
+            console.error('Error updating devices:', error);
+            throw error;
+        }
+    }
+
+    updateDailyUsageChart(data) {
+        if (!this.charts.dailyUsage) {
+            console.error('Daily usage chart not initialized');
+            return;
+        }
+
+        const labels = data.map(item => item.date);
+        const values = data.map(item => item.total);
+
+        this.charts.dailyUsage.data.labels = labels;
+        this.charts.dailyUsage.data.datasets[0].data = values;
+        this.charts.dailyUsage.update();
+    }
+
+    renderDevices(devices) {
+        const devicesList = document.getElementById('devicesList');
+        if (!devicesList) {
+            console.error('Devices list container not found');
+            return;
+        }
+
+        devicesList.innerHTML = devices.map(device => `
+            <div class="device-card">
+                <div class="device-icon">
+                    <i class="fas ${this.getDeviceIcon(device.type)}"></i>
+                </div>
+                <div class="device-info">
+                    <div class="device-name">${device.name}</div>
+                    <div class="device-usage">${Math.round(device.today_usage)} Wh today</div>
+                </div>
+                <div class="device-status ${device.status}">
+                    ${device.status === 'active' ? 
+                        `<span class="current-usage">${Math.round(device.max_power)}W</span>` : 
+                        '<span class="status-inactive">Inactive</span>'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    getDeviceIcon(type) {
+        const icons = {
+            'Entertainment': 'fa-tv',
+            'Appliance': 'fa-plug',
+            'HVAC': 'fa-wind',
+            'Electronics': 'fa-laptop',
+            'Lighting': 'fa-lightbulb'
+        };
+        return icons[type] || 'fa-plug';
+    }
+
+    showError(message) {
+        console.error(message);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+
+        // Remove the error after 3 seconds
+        setTimeout(() => {
+            errorDiv.remove();
+        }, 3000);
+    }
+}
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.dashboard = new Dashboard();
+});
